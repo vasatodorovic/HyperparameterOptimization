@@ -2,17 +2,6 @@
 
 Welcome to my Machine Learning Hyperparameter Optimization project! In this project, we explore various techniques for optimizing hyperparameters to improve the performance of machine learning models. I specifically focused on Genetic Algorithms and Simulated Annealing as optimization methods, and I evaluated their performance using cross-validation.
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Optimization Techniques](#optimization-techniques)
-  - [Genetic Algorithms](#genetic-algorithms)
-  - [Simulated Annealing](#simulated-annealing)
-- [Performance Evaluation](#performance-evaluation)
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
 ## Introduction
 
 Hyperparameter tuning is a critical step in the machine learning model development process. Properly configured hyperparameters can significantly impact a model's performance. In this project, we investigate two popular optimization techniques: Genetic Algorithms and Simulated Annealing.
