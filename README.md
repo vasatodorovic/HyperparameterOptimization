@@ -14,7 +14,7 @@ Genetic Algorithms (GAs) are inspired by the process of natural selection. GAs e
 
 ### Simulated Annealing
 
-Simulated Annealing is a stochastic optimization algorithm inspired by the annealing process in metallurgy. Instead of a fixed temperature, we use the combination of hyperparameters as the "temperature" to accept or reject new solutions. Simulated Annealing explores the hyperparameter space while gradually reducing the "temperature," allowing it to escape local optima and potentially find a global optimum.
+Simulated Annealing is a stochastic optimization algorithm inspired by the annealing process in metallurgy. Instead of a fixed temperature, we use probabilistic teperature-like parameter as the "temperature" to accept or reject new hyperparameter combinations. Simulated Annealing explores the hyperparameter space while gradually reducing the "temperature," allowing it to escape local optima and potentially find a global optimum.
 
 ## Performance Evaluation
 
