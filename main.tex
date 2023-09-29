@@ -1,0 +1,289 @@
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx} 
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        \large
+        \textbf{Univerzitet u Beogradu}
+        
+        \vspace{0.5cm}
+        
+        \textbf{Matematički fakultet}
+        
+        \vspace{4cm}
+        
+        \textbf{Optimizacija hiperparametara modela mašinskog učenja}
+
+        \vspace{3 cm}
+
+        \textbf{Autor: Vasilije Todorović}
+        \vspace{1 cm}
+        
+        \textbf{Profesor: dr Aleksandar Kartelj} 
+        \vspace{1 cm}
+        
+        \textbf{Asistenti: Stefan Kapunac i Denis Aličić}
+
+        \vspace{4 cm}
+        
+        \textbf{Datum:} Septembar 2023
+        
+    \end{center}
+\end{titlepage}
+
+\newpage 
+\pagestyle{plain} 
+
+\tableofcontents 
+
+\newpage 
+
+\section{Uvod}
+\vspace{0.5 cm}
+Optimizacija hiperparametara predstavlja nezaobilaznu fazu u procesu razvoja modela mašinskog učenja. Za postizanje optimalnih performansi modela, ključno je precizno podešavanje hiperparametara - parametara modela koji se ne uče direktno iz podataka, već se njihove vrednosti postavljaju pre treniranja. Loše odabrani hiperparametri mogu dovesti do lošijih performansi modela i preprilagođavanja. Iz tog razloga je od suštinskog značaja pažljivo odabrati hiperparametre modela jer mogu značajno uticati na sposobnost generalizacije i tačnost predviđanja modela na novim podacima.\newline
+
+\noindent U procesu optimizacije hiperparametara, umesto sistematičnog ispitivanja svake moguće kombinacije parametara, mogu se koristiti metaheuristički pristupi, koji omogućavaju efikasniju pretragu prostora hiperparametara kako bi se pronašli oni koji su (skoro) najoptimalniji. Dve široko korišćene klase metaheuristika su:
+
+\begin{itemize}
+    \item \textbf{S-metaheuristike (Single-solution Metaheuristics)}: Pristupi optimizaciji koji se fokusiraju na pojedinačna rešenja tokom procesa pretrage. Ove metode iterativno unapređuju trenutno rešenje, često putem različitih mehanizama kao što su lokalna pretraga ili simulacije procesa kao što je kaljenje metala (Simulated Annealing). Glavna karakteristika S-metaheuristika je ta da se održava samo jedno trenutno rešenje.
+
+    \item \textbf{P-metaheuristike (Population-based Metaheuristics)}: Pristupi optimizaciji koji rade sa populacijom rešenja tokom procesa pretrage. Ovi algoritmi koriste populaciju rešenja i primenjuju genetske operatore kao što su ukrštanje, mutacija i selekcija kako bi evoluirali populaciju ka boljim rešenjima.
+\end{itemize}
+
+\noindent U ovom radu, fokusiraćemo se na primenu algoritama i jedne i druge klase metaheuristika. Konkretno, iz klase S-metaheuristika koristićemo simulirano kaljenje, a iz klase P-metaheuristika genetski algoritam. Ove pristupe uporedićemo sa tradicionalnim pristupom za odabir najboljih hiperparametara - Grid Search, koja sama po sebi predstavlja algoritam grube sile jer pretražuje svaku moguću kombinaciju hiperparametara iz prostora pretrage kako bi pronašla najbolju.\newline
+
+\noindent Analiziraćemo performanse ovih metoda za različite veličine parametarskog prostora pretrage i različite veličine podataka, što će nam omogućiti da bolje razumemo kako se metode ponašaju u različitim scenarijima i kako se ponašaju sa različitim nivoima kompleksnosti.
+
+\newpage
+
+\section{Optimizacione tehnike}
+\vspace{0.5 cm}
+Jedan od najvažnijih koraka prilikom kontruisanja modela mašinskog učenja jeste odabrati hiperparametre koji obezbeđuju najbolje performanse modela izbegavajući pojavu preprilagođavanja ili potprilagođavanja.
+\subsection{GridSearchCV}
+\vspace{0.25 cm}
+Jedan od najčešćih pristupa prilikom pronalaženja najboljih hiperparametara jeste da ispitamo sve moguće kombinacije njihovih vrednosti i kao najbolju kombinaciju proglasimo onu koja obezbeđuje najbolje rezultate u odnosu na posmatranu metriku. U programskom jeziku Python, pomenuta tehnika implementirana je u okviru klase \textit{GridSearchCV}. \newline
+
+\noindent Prostor pretrage hiperparametara konstruiše se na osnovu rečnika tako da se svaki hiperparametar slika u listu unapred zadatih vrednosti koje može uzeti. Ukupan prostor pretrage predstavlja skup svih mogućih kombinacija vrednosti hiperparametara. \newline
+
+\noindent \textit{GridSearchCV} će proći kroz svaku moguću kombinaciju iz prostora pretrage i nad njom obučiti model i oceniti njegove peroformanse. Obučavanje i ocenjivanje performansi odvija se pomoću tehnike unakrsne validacije (eng. cross validation), zbog cega je u nazivu klase prisutno 'CV'. Ideja unakrsne validacije jeste da se skup podataka podeli na preklope (eng. folds), od kojih jedan preklop predstavlja validacioni skup na kojem će se ocenjivati performanse modela koji je obučen na trening podacima, koji zapravo predstavljaju ostale preklope. Proces se ponavlja tako da će u svakoj iteraciji sledeći preklop činiti validacioni skup, a ukupna ocena modela sa datim parametrima predstavlja srednju vrednost ocene na svakom od validacionih skupova. Kao najbolja kombinacija hiperparametra biće odabrana ona koja ima najbolju ocenu na validacionom skupu. \newline
+
+\noindent Ovim pristupom vršimo iscrpnu pretragu čitavog prostora, čime ćemo sigurno naći kombinaciju koja ima najbolju ocenu nad posmatranim podacima, ali ukoliko su u pitanju veliki skupovi podataka ili je prostor pretrage veliki, \textit{GridSearchCV} se može pokazati kao neefikasan. Bolje performanse ove tehnike u slučaju velikih podataka i prostora pretrage dobijaju se paralelnim izvršavanjem.
+\newpage
+\subsection{SimulatedAnnealingCV}
+\vspace{0.25 cm}
+\textbf{Simulirano kaljenje (eng. Simulated Annealing)} je predstavnik klase S-metaheuristika. Pomoću ove tehnike možemo takođe pronaći hiperparametre za posmatrani model, ali za razliku od GridSearchCV, ne mora biti izvršena iscrpna pretraga celokupnog prostora pretrage, već se čitav proces nalaženja optimalnih hiperparametara može izvršiti u mnogo manjem broju iteracija.\newline
+
+\noindent U ovom radu, implementacija simuliranog kaljenja izvršena je u okviru klase \textit{SimulatedAnnealingCV}. Kao i kod \textit{GridSearchCV}, na osnovu 'CV' može se zakljuciti da je prilikom ocene performansi modela korišćena unakrsna validacija. Objasnimo ideju simuliranog kaljenja na osnovu njegove implementacije unutar ove klase:
+
+\begin{enumerate}
+    \item \textbf{Inicijalizacija}: Početne vrednosti hiperparametara se nasumično generišu kao početna tačka za proces optimizacije. Ključni parametri za simulirano kaljenje se podešavaju prilikom inicijalizacije instance klase, uključujući broj iteracija (num\_iterations), kriterijum ocene (scoring), broj preklopa za unakrsnu validaciju (cv), opcioni parametar za rano zaustavljanje (early\_stopping) i vrednost k koja označava broj iteracija nakon kojeg će se primeniti rano zaustavljanje.
+    \item \textbf{Iterativni proces simuliranog kaljenja}:
+        \begin{itemize}
+            \item Proces simuliranog kaljenja počinje generisanjem nasumičnih hiperparametara i ocenjivanjem modela sa tim parametrima.
+            \item Ocenjena vrednost performansi modela se koristi kao osnov za upoređivanje sa budućim rešenjima.
+            \item Proces se iterativno ponavlja kroz unapred definisan broj iteracija.
+            \item U svakoj iteraciji, novi nasumični hiperparametri se generišu, a model se ponovo ocenjuje sa tim parametrima.
+            \item Ako nova ocena performansi modela premaši prethodnu ocenu, nova parametari se prihvataju kao trenutno najbolje rešenje, i ta nova ocena se koristi za upoređivanje sa budućim rešenjima.
+            \item U suprotnom, postoji određena verovatnoća da se prihvati lošija ocena, što omogućava izlazak iz lokalnih maksimuma. Ova verovatnoća prihvatanja opada sa brojem iteracija.
+            \item Ako je omogućeno rano zaustavljanje i nema poboljšanja u oceni tokom određenog broja iteracija ili ukoliko je izvršen broj iteracija koji je označen kao maksimalan, proces se zaustavlja.
+        \end{itemize}
+\end{enumerate}
+Na kraju procesa, vraća se najbolje pronađena kombinacija hiperparametara. Ovaj pristup može značajno ubrzati proces optimizacije u odnosu na iscrpno pretraživanje svih kombinacija hiperparametara, posebno kada je taj prostor veliki i kompleksan. Pošto prilikom ovog procesa ne mora biti izvršena pretraga čitavog prostora pretrage, za dobijeno rešenje se ne može garantovati da ima najbolju ocenu u odnosu na čitav prostor pretrage.
+
+\subsection{GeneticAlgorithmCV}
+\vspace{0.25 cm}
+\textbf{Genetski algoritam (eng. genetic algorithm)} je tehnika optimizacije inspirisana procesom evolucije u prirodi, i predstavnik je klase P-metaheuristika. Ovo što znači da se oslanja na populaciju rešenja i primenjuje genetske operacije kao što su selekcija, ukrštanje i mutacija kako bi se našlo optimalno rešenje u prostoru hiperparametara modela mašinskog učenja. Genetski algoritmi su takođe korisni kada je prostor hiperparametara velik i kada je potrebno istražiti različite kombinacije hiperparametara kako bi se pronašao dovoljno dobar model.\newline
+
+\noindent U ovom radu, pronalaženje optimalnih hiperparametara genetskim algoritmom implementirano je unutar klase \textit{GeneticAlgorithmCV}, koja, kao i prethodni pristupi, koristi unakrsnu validaciju prilikom ocenjivanja performansi modela. Objasnimo ideju genetskog algoritma na onovu njegove implementacije u ovoj klasi:
+
+\begin{enumerate}
+    \item \textbf{Inicijalizacija populacije}: Algoritam počinje formiranjem početne populacije rešenja koja predstavlja prvu generaciju. Svako rešenje predstavlja jednu kombinaciju hiperparametara za posmatrani model. Kombinacija hiperparametara se formira tako što svaki parametar uzme nasumičnu vrednost iz liste vrednosti koja mu je pridružena.
+    \item \textbf{Evaluacija populacije}: Nakon inicijalizacije, za svaku jedinku računamo faktor prilagođenosti životnoj sredini, odnosno, za svaku kombinaciju hiperparametara unutar populacije ocenjujemo performanse za zadati model mašinskog učenja. Na osnovu ovih ocena, jedinke se rangiraju unutar generacije, tako da je najprilagođenija jedinka, odnosno kombinacija hiperparametara sa najboljom ocenom, prva u generaciji.
+    \item \textbf{Selekcija}: U ovom koraku se iz trenutne generacije biraju jedinke koje će biti roditelji čijim se ukrštanjem nastati nove jedinke u narednoj generaciji. Odabir roditelja obavlja se po principu turnirske selekcije, gde se bira nekoliko nasumičnih jedinki iz generacije, a za roditelja se bira ona jedinka koja ima najbolju ocenu.
+    \item \textbf{Ukrštanje}: U ovom koraku se na osnovu dva roditelja, ukrštanjem njihovih osobina dobija nova jedinka. U našem slučaju, ukštanje se obavlja tako što se prolazi kroz skup parametra oba roditelja i s jednakom verovatnoćom nova jedinka dobija vrednost posmatranog parametra od jednog ili drugog roditelja.
+    \item \textbf{Mutacija}: Nakon dobijanja nove jedinke, sledi korak mutacije, u kojem je jedinka sklona manjim promenama u osobinama u odnosu na roditelje. U našem slučaju, prolazimo kroz skup parametara, i za svaki parametar računamo verovatnoću da li dolazi do mutacije. Ukoliko je verovatnoća iznad postavljenog praga, menjamo vrednost tog parametra tako što biramo nasumičnu vrednost iz liste mogućih vrednosti tog parametra.
+    \item \textbf{Smena generacije}: Korake selekcije, ukštanja i mutacije obavljamo sve dok se ne popuni nova generacija. Kao opciju možemo uključiti i postojanje elitizma. Ukoliko u procesu selekcije odaberemo dva dobro prilagođena roditelja, može se desiti jedinka dobijena njihovim ukrštanjem ne bude dobro prilagođena životnoj okolini. Iz ovog razloga, želimo da u svakoj generaciji čuvamo određen broj dobro prilagođenih jedinki kako bi se osigurali da ćemo na kraju algoritma imati optimalno rešenje. Ukoliko je prisutan elitizam, određen broj jedinki se prosleđuje u narednu generaciju, a ostatak nove generacije se dobija selekcijom, ukrštanjem i mutacijom jedinki iz prethodne generacije.
+    \item \textbf{Završetak algoritma}: Prilikom inicijalizacije klase \textit{GeneticAlgorithmCV}, kao jedan od ključnih parametara za izvršavanje genetskog algoritma, postavljamo vrednost broja iteracija algoritma, odnosno, posle koliko generacija će se zaustaviti proces evolucije. Po završetku algoritma, jedinka koja se nalazi na prvom mestu u populaciji se vraća kao najbolje rešenje.
+\end{enumerate}
+Važno je napomenuti da ovaj genetski algoritam ne garantuje pronalaženje apsolutno najboljih parametara u posmatranom prostoru pretragem, ali može efikasno pronaći zadovoljavajuće kombinacije hiperparametara za dati model mašinskog učenja, što ga čini korisnim alatom za optimizaciju u slučajevima gde je broj hiperparametara veliki i složen.
+\noindent 
+\newpage 
+\section{Analiza performansi različitih optimizacionih tehnika}
+\vspace{0.5 cm}
+U narednom delu ćemo uporediti performanse posmatranih tehnika optimizacije i kvalitet dobijenih hiperparametara. Važno je napomenuti da je implementacija simuliranog kaljenja i genetskog algoritma izvšena bez paralelizacije, za razliku od klase \textit{GridSearchCV}. Iz tog razloga, prilikom analiziranja performansi \textit{GridSearchCV}, posmatraćemo odvojeno primer sa paralelizacijom i bez paralelizacije (postavljanjem parametra n\_jobs na 1).\newline
+
+\noindent Svaka od ovih tehnika podržava rad sa bilo kojim tipom modela mašinskog učenja, i sa bilo kojim kriterijumom ocene modela. Analiziraćemo performanse ovih tehnika za model stabla odlučivanja, nad prostorima pretrage različitih veličina i nad skupovima podataka različitih dimenzija. 
+
+\noindent Razmatraćemo prostore pretrage definisanih na osnovu sledećih rečnika:
+\begin{itemize}
+    \item 1. prostor pretrage: \newline
+            'max\_depth' : [4,5,6], \newline
+              'criterion' : ['gini','entropy'], \newline
+              'min\_samples\_leaf':[2,3,4], \newline
+              'min\_samples\_split':[3,4,5] 
+    \item 2. prostor pretrage: \newline
+            'max\_depth' : [4,5,6], \newline
+              'criterion' : ['gini','entropy'], \newline
+              'min\_samples\_leaf':[2,3,4,5,6], \newline
+              'min\_samples\_split':[3,4,5,6]  
+    \item 3. prostor pretrage: \newline
+              'max\_depth' : [4,5,6,7,8], \newline
+              'criterion' : ['gini','entropy'], \newline
+              'min\_samples\_leaf':[2,3,4,5,6], \newline
+              'min\_samples\_split':[3,4,5,6] 
+    \item 4. prostor pretrage: \newline
+              'max\_depth' : [4,5,6,7,8,9,10], \newline
+              'criterion' : ['gini','entropy'], \newline
+              'min\_samples\_leaf':[2,3,4,5,6,7], \newline
+              'min\_samples\_split':[3,4,5,6,7]  \newline
+\end{itemize}
+Ukupan broj različitih kombinacija parametara koji se mogu dobiti na osnovu definisanog rečnika označava veličinu prostora pretrage za posmatrani optimizacioni problem pronalaska najoptimalnijih hiperparametara. Veličine posmatranih prostora pretrage su redom 54,120,200,420.\newline
+
+\newpage
+\noindent Posmatrajmo performanse algoritma simuliranog kaljenja u odnosu na prostor pretrage i veličinu podataka. Parametri klase SimulatedAnnealingCV su podešeni tako da može pretražiti najviše trećinu ukupnog prostora pretrage. Podaci koji su korišćeni imaju 98000 redova, ali posmatrajmo zasebno performanse na 100, 1000, 10000 i svih 98000 redova. Pogledajmo sledeću tabelu sa konkretnim vremenima izvršavanja.\newline
+\vspace{0.25 cm}
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ SimulatedAnnealingCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 0.68s & 1.31s & 8.58s & 58s\\
+\hline
+2. prostor pretrage & 1.13s & 2.73s & 13s & 2min 11s\\
+\hline
+3. prostor pretrage & 1.81s & 3.6s & 34.25s & 3min 53s\\
+\hline
+4. prostor pretrage & 4s & 9.83s  & 1min 13s & 9min 9s\\
+\hline
+\end{tabular}
+\caption{Vreme izvršavanja simuliranog kaljenja za različite prostore pretrage.}
+\end{table}
+\vspace{0.25 cm}
+
+\noindent Ono što možemo zaključiti jeste da vreme izvršavanja algoritma raste s porastom podataka, obzirom da samo treniranje modela s porastom podataka počinje da traje znatno duže. Takođe možemo videti da vreme izvšavanja raste sa porastom prostora pretrage.\newline
+
+\noindent Posmatrajmo sada performanse genetskog algoritma na isti način kao što smo kod simuliranog kaljenja. I u ovom slučaju parametri genetskog algoritma su podešeni tako da obiđe trećinu ukupnog prostora pretrage. Na sledećoj tabeli možemo videti vremena izvršavanja genetskog algoritma:\newline
+\vspace{0.25 cm}
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ GeneticAlgorithmCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 0.45s & 0.75s & 6.12s & 43.06s\\
+\hline
+2. prostor pretrage & 1.19s & 2.42s & 11.7s & 1min 58s\\
+\hline
+3. prostor pretrage & 2.18s & 6.24s & 25.4s & 4min 57s\\
+\hline
+4. prostor pretrage & 4.03s & 8.26s  & 1min 7s & 12min 10s\\
+\hline
+\end{tabular}
+\caption{Vreme izvršavanja genetskog algoritma za različite prostore pretrage.}
+\end{table}
+\vspace{0.25 cm}
+
+\noindent Možemo zaključiti da su vremena izvršavanja u nekim situacijama manja a u nekim situacijama veoma bliska izvšavanju simuliranog kaljenja, čime se može zaključiti da se ovaj algoritam pokazuje kao efikasniji.\newline
+
+\noindent Prethodne dve tehnike ne koriste paralelno izvršavanje, što je moguće kod tehnike GridSearchCV. Kako bismo uvideli značaj paralelizacije, posmatrajmo performanse ove tehnike sa i bez paralelnog izvršavanja. Važno je naglasiti da se uz pomoć GridSearchCV nalazi globalno najbolje rešenje, obzirom da pretražuje čitav prostor pretrage, tj. ispituje svaku moguću kombinaciju parametara, dok smo sa prethodne dve tehnike ispitivali trećinu. Na sledećim tabelama možemo videti performanse ove tehnike:\newline
+\vspace{0.25 cm}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ GridSearchCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 2.02s & 3.89s & 14.8s & 6min 12s\\
+\hline
+2. prostor pretrage & 4.51s & 7.92s & 32.85s & >12min\\
+\hline
+3. prostor pretrage & 8.24s & 16.81s & 1min 2s & -\\
+\hline
+4. prostor pretrage & 13.60s & 35.33s  & 2min 46s & -\\
+\hline
+\end{tabular}
+\caption{Vreme izvršavanja GridSearchCV bez paralelizacije za različite prostore pretrage.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ GridSearchCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 0.55s & 1.14s & 9.6s & 1min 41s\\
+\hline
+2. prostor pretrage & 1.14s & 2.53s & 17.04s & 3min 41s\\
+\hline
+3. prostor pretrage & 1.84s & 4.57s & 29.39s & 8min 25s\\
+\hline
+4. prostor pretrage & 4.63s & 9.38s  & 1min 14s & 18min 19s\\
+\hline
+\end{tabular}
+\caption{Vreme izvršavanja GridSearchCV sa paralelizacijom za različite prostore pretrage.}
+\end{table}
+\vspace{0.25 cm}
+
+\noindent Možemo videti da se GridSearchCV bez paralelizacije pokazuje kao dosta neefikasniji u odnosu na SimulatedAnnealingCV i GeneticAlgorithmCV, obzirom da pretražuje čitav prostor pretrage. S druge strane, paralelizacijom se postižu znatno bolje performanse. Vreme izvršavanja je slično kao za prethodne dve tehnike, iako se pretražuje čitav prostor pretrage, ali s porastom količine podataka razlika u vremenu izvršavanja postaje sve veća. \newline
+
+\noindent Iako korišćenjem SimulatedAnnealingCV i GeneticAlgorithmCV dobijamo bolje performanse u odnosu na GridSearchCV, pogotovo s porastom količine podataka i prostora pretrage, to još uvek nije dovoljno dobar razlog da se ove dve tehnike koriste umesto GridSearchCV. Moramo proceniti kvalitet dobijenih hiperparametara, tj. koliko su optimalni. Kvalitet hiperparametara merićemo tako što ćemo izračunati razliku u oceni modela koji je treniran nad najoptimalnijim hiperparametrima dobijenim tehnikom GridSearchCV i modela koji je treniran nad hiperparametrima dobijenim sa preostale dve tehnike. Kao model mašinskog učenja koristićemo stablo odlučivanja, a kao ocenu modela tačnost. Važno je napomenuti da su pomenute klase u ovom radu implementirane tako da mogu da rade sa bilo kojim tipom modela mašinskog učenja i kriterijuma ocene. Na sledećim tabelama možemo videti kvalitet hiperparametara dobijenih pomoću SimulatedAnnealingCV i GeneticAlgorithmCV, za različite prostore pretrage.  \newline
+\newpage
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ SimulatedAnnealingCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 0.02 & 0.00 & 0.01 & <0.01\\
+\hline
+2. prostor pretrage & 0.02 & 0.00 & 0.007 & <0.01\\
+\hline
+3. prostor pretrage & 0.03 & 0.01 & 0.01 & <0.01\\
+\hline
+4. prostor pretrage & 0.01 & 0.01  & 0.01 & 0.0\\
+\hline
+\end{tabular}
+\caption{Razlika u tačnosti hiperparametara dobijenih pomoću SimulatedAnnealingCV i GridSearchCV}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+ GeneticAlgorithmCV& $10^2$ redova & $10^3$ redova & $10^4$ redova & $9.8*10^4$ redova \\
+\hline
+1. prostor pretrage & 0.01 & 0.015 & <0.001 & <0.01\\
+\hline
+2. prostor pretrage & 0.03 & 0.015 & <0.001 & 0.00\\
+\hline
+3. prostor pretrage & 0.08 & <0.01 & <0.01 & 0.00\\
+\hline
+4. prostor pretrage & 0.05 & <0.01  & <0.001 & <0.001\\
+\hline
+\end{tabular}
+\caption{Razlika u tačnosti hiperparametara dobijenih pomoću GeneticAlgorithmCV i GridSearchCV}
+\end{table}
+\vspace{0.25 cm}
+
+\noindent Na osnovu prikazanih rezultata vidimo da su obe tehnike sposobne da pronađu skoro najoptimalnije hiperparametre, a u nekim slučajevima i najoptimalnije hiperparametre, pretražujući samo trećinu prostora pretrage. U većini slučajeva uz pomoć obe tehnike dobijeni su hiperparametri pomoću kojih model ima tačnost koja se razlikuje za 1\% od najoptimalnijih hiperparametara dobijenih tehnikom GridSearchCV. 
+\vspace{0.25 cm}
+\section{Zaključak}
+\vspace{0.5 cm}
+SimulatedAnnealingCV i GeneticAlgorithmCV su se, na osnovu prikazanih rezultata, pokazali kao bolji izbor u odnosu na GridSearchCV, posebno kada se veličina podataka i prostor pretrage povećavaju. GridSearchCV može postati nepraktičan ili čak neupotrebljiv kada se suočavamo sa ogromnim količinama podataka i prostorima pretrage, zbog eksponencijalnog povećanja vremena izvršavanja koje pruža. U ovim slučajevima, SimulatedAnnealingCV i GeneticAlgorithmCV nude razumna rešenja, s obzirom na njihovo linearno povećanje vremena izvršavanja sa rastom zahteva.\newline
+
+\noindent Važno je napomenuti da iako SimulatedAnnealingCV i GeneticAlgorithmCV nisu u mogućnosti da garantuju uvek apsolutno najbolje hiperparametre, oni gotovo uvek pružaju hiperparametre koji su veoma blizu optimalnima.
+\newpage
+\section{Literatura}
+\begin{enumerate}
+    \item Computational Intelligence - An Introduction, Andries Engelbrecht, John Willey \& Sons, 2007.
+    \item Metaheuristics - from design to implementation, Talibi El-Gazali, John Willey and Sons, 2009.
+    \item https://github.com/MATF-RI/Materijali-sa-vezbi
+    \item https://www.kaggle.com/datasets/iamsouravbanerjee/airline-dataset
+\end{enumerate}
+\end{document}
+
